@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   }
 
   const text = await file.text();
-  const result = Papa.parse<Record<string, string>>(text, { header: true, skipEmptyLines: true });
+  const result = Papa.parse(text, { header: true, skipEmptyLines: true });
 
   if (result.errors?.length) {
     return NextResponse.json({ error: `CSV 解析失败：${result.errors[0].message}` }, { status: 400 });
