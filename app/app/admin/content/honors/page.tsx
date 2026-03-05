@@ -20,8 +20,8 @@ export default function Page() {
       .order("created_at", { ascending: false })
       .limit(500);
     if (error) return setMsg(error.message);
-    setRows((data || []) as any);
-  }}
+    setRows(data || []) as any);
+  }
 
   useEffect(() => { load();}}, []);
 
