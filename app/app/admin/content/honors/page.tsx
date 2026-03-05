@@ -13,21 +13,21 @@ export default function Page() {
 
   async function load() {
     setMsg(null);
-    const {{ data, error }} = await supabase
+    const { data, error } = await supabase
       .from("honors")
       .select("id,name,description,image_url,sort_order,is_active,created_at")
-      .order("sort_order", {{ ascending: true }})
-      .order("created_at", {{ ascending: false }})
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(500);
     if (error) return setMsg(error.message);
     setRows((data || []) as any);
   }}
 
-  useEffect(() => {{ load(); }}, []);
+  useEffect(() => { load();}}, []);
 
   async function add() {
     setMsg(null);
-    const {{ error }} = await supabase.from("honors").insert(form);
+    const { error } = await supabase.from("honors").insert(form);
     if (error) return setMsg(error.message);
     setForm({ name: "", description: "", image_url: "", sort_order: 0, is_active: true });
     await load();
@@ -35,7 +35,7 @@ export default function Page() {
 
   async function update(id: string, patch: any) {
     setMsg(null);
-    const {{ error }} = await supabase.from("honors").update(patch).eq("id", id);
+    const { error } = await supabase.from("honors").update(patch).eq("id", id);
     if (error) return setMsg(error.message);
     await load();
   }}
@@ -43,34 +43,34 @@ export default function Page() {
   async function remove(id: string) {
     if (!confirm("确定删除？")) return;
     setMsg(null);
-    const {{ error }} = await supabase.from("honors").delete().eq("id", id);
+    const { error } = await supabase.from("honors").delete().eq("id", id);
     if (error) return setMsg(error.message);
     await load();
   }}
 
   return (
-    <div className="card" style={{maxWidth: 1100}}>
-      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+    <div className="card" style={maxWidth: 1100}>
+      <div style={display:"flex", justifyContent:"space-between", alignItems:"center"}>
         <h2>荣誉墙</h2>
         <Link className="badge" href="/app/admin/content">← 返回内容管理</Link>
       </div>
 
-      <div className="card" style={{marginTop: 10}}>
+      <div className="card" style={marginTop: 10}>
         <h3>新增</h3>
         <div className="row">
-  <label style={{flex:"1 1 260px"}}>
+  <label style={flex:"1 1 260px"}>
     <div className="small">名称</div>
     <input className="input" value={form.name} onChange={(e)=>setForm({...form, name: e.target.value})} />
   </label>
-  <label style={{flex:"1 1 240px"}}>
+  <label style={flex:"1 1 240px"}>
     <div className="small">图片 URL（可空）</div>
     <input className="input" value={form.image_url} onChange={(e)=>setForm({...form, image_url: e.target.value})} placeholder="https://..." />
   </label>
-  <label style={{width:120}}>
+  <label style={width:120}>
     <div className="small">排序</div>
     <input className="input" value={form.sort_order} onChange={(e)=>setForm({...form, sort_order: Number(e.target.value||0)})} />
   </label>
-  <label style={{width:140}}>
+  <label style={width:14}}>
     <div className="small">启用</div>
     <select className="input" value={form.is_active ? "true":"false"} onChange={(e)=>setForm({...form, is_active: e.target.value==="true"})}>
       <option value="true">是</option>
@@ -78,17 +78,17 @@ export default function Page() {
     </select>
   </label>
 </div>
-<label style={{marginTop: 8}}>
+<label style={marginTop: }}>
   <div className="small">描述</div>
-  <textarea className="input" style={{minHeight: 90}} value={form.description} onChange={(e)=>setForm({...form, description: e.target.value})} />
+  <textarea className="input" style={minHeight: 90} value={form.description} onChange={(e)=>setForm({...form, description: e.target.value})} />
 </label>
 
         <button className="btn" onClick={add}>新增</button>
       </div>
 
-      {msg ? <div className="small" style={{marginTop: 10}}>{msg}</div> : null}
+      {msg ? <div className="small" style={marginTop: 10}>{msg}</div> : null}
 
-      <div className="card" style={{marginTop: 10}}>
+      <div className="card" style={marginTop: 10}>
         <h3>列表（点击字段即可修改）</h3>
         <table>
           <thead>
@@ -104,15 +104,15 @@ export default function Page() {
   <input className="input" value={(r as any).name} onChange={(e)=>update((r as any).id, { name: e.target.value })} />
 </td>
 <td>
-  <textarea className="input" style={{minHeight: 60}} value={(r as any).description || ""} onChange={(e)=>update((r as any).id, { description: e.target.value })} />
+  <textarea className="input" style={minHeight: 6}} value={(r as any).description || ""} onChange={(e)=>update((r as any).id, { description: e.target.value })} />
 </td>
 <td>
   <input className="input" value={(r as any).image_url || ""} onChange={(e)=>update((r as any).id, { image_url: e.target.value })} placeholder="https://..." />
 </td>
-<td style={{width:90}}>
+<td style={width:9}}>
   <input className="input" value={(r as any).sort_order} onChange={(e)=>update((r as any).id, { sort_order: Number(e.target.value||0) })} />
 </td>
-<td style={{width:120}}>
+<td style={width:12}}>
   <select className="input" value={(r as any).is_active ? "true":"false"} onChange={(e)=>update((r as any).id, { is_active: e.target.value==="true" })}>
     <option value="true">是</option>
     <option value="false">否</option>
