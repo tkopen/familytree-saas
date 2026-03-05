@@ -1,77 +1,77 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { createSupabaseServer } from "@/lib/supabase/server";
-import { PDFDocument, StandardFonts } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
-const Query = z.object({ tenantId: z.string().uuid() });
+// 强制走 Node runtime（Buffer 可用、pdf-lib 更稳）
+export const runtime = "nodejs";
+// 如果你希望每次都实时生成，不走缓存：
+// export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const parsedQ = Query.safeParse(Object.fromEntries(url.searchParams.entries()));
-  if (!parsedQ.success) return NextResponse.json({ error: "Bad tenantId" }, { status: 400 });
-  const tenantId = parsedQ.data.tenantId;
+export async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const title: string = body?.title || "Family Tree Export";
+    const lines: string[] = Array.isArray(body?.lines) ? body.lines : [];
 
-  const supabase = createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const doc = await PDFDocument.create();
+    const page = doc.addPage([595.28, 841.89]); // A4
+    const font = await doc.embedFont(StandardFonts.Helvetica);
 
-  // permission: any member can export (你可按套餐/次数限制)
-  const { data: mem } = await supabase
-    .from("tenant_members")
-    .select("role")
-    .eq("tenant_id", tenantId)
-    .eq("user_id", user.id)
-    .maybeSingle();
+    const marginX = 50;
+    let y = 800;
 
-  if (!mem) return NextResponse.json({ error: "No permission" }, { status: 403 });
+    // 标题
+    page.drawText(title, {
+      x: marginX,
+      y,
+      size: 18,
+      font,
+      color: rgb(0, 0, 0),
+    });
 
-  const { data: tenant } = await supabase
-    .from("tenants")
-    .select("name,plan")
-    .eq("id", tenantId)
-    .single();
+    y -= 30;
 
-  const { data: persons } = await supabase
-    .from("persons")
-    .select("full_name,gender,birth_date,death_date,custom_fields")
-    .eq("tenant_id", tenantId)
-    .order("created_at", { ascending: true })
-    .limit(5000);
+    // 内容
+    const fontSize = 11;
+    const lineHeight = 16;
 
-  const doc = await PDFDocument.create();
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const fontSize = 12;
+    const safeLines = lines.length
+      ? lines.map((s) => String(s ?? ""))
+      : ["(No content)"];
 
-  let page = doc.addPage([595.28, 841.89]); // A4
-  let y = 800;
+    for (const line of safeLines) {
+      // 换页
+      if (y < 60) {
+        y = 800;
+        doc.addPage([595.28, 841.89]);
+      }
 
-  const title = `${tenant?.name ?? "家族"} 族谱导出（${tenant?.plan ?? "free"}）`;
-  page.drawText(title, { x: 50, y, size: 16, font });
-  y -= 24;
+      const currentPage = doc.getPages()[doc.getPages().length - 1];
+      currentPage.drawText(line, {
+        x: marginX,
+        y,
+        size: fontSize,
+        font,
+        color: rgb(0.1, 0.1, 0.1),
+      });
 
-  const subtitle = `导出时间：${new Date().toISOString()}`;
-  page.drawText(subtitle, { x: 50, y, size: 10, font });
-  y -= 20;
-
-  page.drawText("人物列表：", { x: 50, y, size: 12, font });
-  y -= 18;
-
-  for (const p of (persons || [])) {
-    const line = `${p.full_name} | ${p.gender} | ${p.birth_date ?? "-"} ~ ${p.death_date ?? "-"} | ${p.custom_fields ? JSON.stringify(p.custom_fields) : ""}`;
-    if (y < 60) {
-      page = doc.addPage([595.28, 841.89]);
-      y = 800;
+      y -= lineHeight;
     }
-    page.drawText(line.slice(0, 120), { x: 50, y, size: fontSize, font });
-    y -= 16;
+
+    const bytes = await doc.save();
+    const pdfBuffer = Buffer.from(bytes);
+
+    return new NextResponse(pdfBuffer, {
+      status: 200,
+      headers: {
+        "content-type": "application/pdf",
+        "content-disposition": 'attachment; filename="family-tree.pdf"',
+        "cache-control": "no-store",
+      },
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err?.message || "PDF export failed" },
+      { status: 500 }
+    );
   }
-
-  const bytes = await doc.save();
-  return new NextResponse(bytes, {
-    status: 200,
-    headers: {
-      "content-type": "application/pdf",
-      "content-disposition": "attachment; filename*=UTF-8''%E6%97%8F%E8%B0%B1%E5%AF%BC%E5%87%BA.pdf"
-    }
-  });
 }
