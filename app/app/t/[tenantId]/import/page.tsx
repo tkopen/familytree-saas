@@ -33,10 +33,10 @@ export default function ImportPage({ params }: { params: { tenantId: string } })
 
       <div className="card" style={{background:"#f9fafb"}}>
         <div className="small">CSV 表头建议：</div>
-        <pre className="small" style={{whiteSpace:"pre-wrap"}}>
+       <pre className="small" style={{ whiteSpace: "pre-wrap" }}>{`
 full_name,gender,birth_date,death_date,notes,custom_fields_json
-张三,male,1990-01-01,,备注,"{{""字辈"":""德"",""房派"":""一房""}}"
-        </pre>
+张三,male,1990-01-01,,备注,"{\\"字辈\\":\\"德\\",\\"房派\\":\\"一房\\"}"
+`}</pre>
         <div className="small">gender 可填：male/female/unknown；custom_fields_json 是 JSON 字符串（可空）。</div>
       </div>
 
