@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 
-type Row = {{ id: string; name: string; description: string | null; image_url: string | null; sort_order: number; is_active: boolean; created_at: string; }};
+type Row = { id: string; name: string; description: string | null; image_url: string | null; sort_order: number; is_active: boolean; created_at: string; };
 export default function Page() {
   const supabase = createSupabaseBrowser();
   const [rows, setRows] = useState<Row[]>([]);
