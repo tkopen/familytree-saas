@@ -1,0 +1,143 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { createSupabaseBrowser } from "@/lib/supabase/client";
+
+type Row = { { id: string; position: 'footer'; title: string | null; image_url: string | null; link_url: string | null; sort_order: number; is_active: boolean; created_at: string; } };
+export default function Page() {
+  const supabase = createSupabaseBrowser();
+  const [rows, setRows] = useState<Row[]>([]);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [form, setForm] = useState<any>({ position: 'footer', title: '', image_url: '', link_url: '', sort_order: 0, is_active: true });
+
+  async function load() {
+    setMsg(null);
+    const {{ data, error }} = await supabase
+      .from("ads")
+      .select("id,position,title,image_url,link_url,sort_order,is_active,created_at")
+      .order("sort_order", {{ ascending: true }})
+      .order("created_at", {{ ascending: false }})
+      .limit(500);
+    if (error) return setMsg(error.message);
+    setRows((data || []) as any);
+  }}
+
+  useEffect(() => {{ load(); }}, []);
+
+  async function add() {
+    setMsg(null);
+    const {{ error }} = await supabase.from("ads").insert(form);
+    if (error) return setMsg(error.message);
+    setForm({ position: 'footer', title: '', image_url: '', link_url: '', sort_order: 0, is_active: true });
+    await load();
+  }}
+
+  async function update(id: string, patch: any) {
+    setMsg(null);
+    const {{ error }} = await supabase.from("ads").update(patch).eq("id", id);
+    if (error) return setMsg(error.message);
+    await load();
+  }}
+
+  async function remove(id: string) {
+    if (!confirm("确定删除？")) return;
+    setMsg(null);
+    const {{ error }} = await supabase.from("ads").delete().eq("id", id);
+    if (error) return setMsg(error.message);
+    await load();
+  }}
+
+  return (
+    <div className="card" style={{maxWidth: 1100}}>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+        <h2>底部广告位</h2>
+        <Link className="badge" href="/app/admin/content">← 返回内容管理</Link>
+      </div>
+
+      <div className="card" style={{marginTop: 10}}>
+        <h3>新增</h3>
+        <div className="row">
+  <label style={{width:160}}>
+    <div className="small">位置</div>
+    <select className="input" value={form.position} onChange={(e)=>setForm({...form, position: e.target.value})}>
+      <option value="footer">底部</option>
+    </select>
+  </label>
+  <label style={{flex:"1 1 240px"}}>
+    <div className="small">标题</div>
+    <input className="input" value={form.title} onChange={(e)=>setForm({...form, title: e.target.value})} />
+  </label>
+  <label style={{flex:"1 1 240px"}}>
+    <div className="small">图片 URL（可空）</div>
+    <input className="input" value={form.image_url} onChange={(e)=>setForm({...form, image_url: e.target.value})} placeholder="https://..." />
+  </label>
+  <label style={{flex:"1 1 240px"}}>
+    <div className="small">跳转链接（可空）</div>
+    <input className="input" value={form.link_url} onChange={(e)=>setForm({...form, link_url: e.target.value})} placeholder="https://..." />
+  </label>
+</div>
+<div className="row" style={{marginTop: 8}}>
+  <label style={{width:120}}>
+    <div className="small">排序</div>
+    <input className="input" value={form.sort_order} onChange={(e)=>setForm({...form, sort_order: Number(e.target.value||0)})} />
+  </label>
+  <label style={{width:140}}>
+    <div className="small">启用</div>
+    <select className="input" value={form.is_active ? "true":"false"} onChange={(e)=>setForm({...form, is_active: e.target.value==="true"})}>
+      <option value="true">是</option>
+      <option value="false">否</option>
+    </select>
+  </label>
+</div>
+
+        <button className="btn" onClick={add}>新增</button>
+      </div>
+
+      {msg ? <div className="small" style={{marginTop: 10}}>{msg}</div> : null}
+
+      <div className="card" style={{marginTop: 10}}>
+        <h3>列表（点击字段即可修改）</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>位置</th><th>标题</th><th>图片</th><th>链接</th><th>排序</th><th>启用</th><th>时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={(r as any).id}>
+                <td style={{width:120}}>{(r as any).position}</td>
+<td>
+  <input className="input" value={(r as any).title || ""} onChange={(e)=>update((r as any).id, { title: e.target.value })} />
+</td>
+<td>
+  <input className="input" value={(r as any).image_url || ""} onChange={(e)=>update((r as any).id, { image_url: e.target.value })} placeholder="https://..." />
+</td>
+<td>
+  <input className="input" value={(r as any).link_url || ""} onChange={(e)=>update((r as any).id, { link_url: e.target.value })} placeholder="https://..." />
+</td>
+<td style={{width:90}}>
+  <input className="input" value={(r as any).sort_order} onChange={(e)=>update((r as any).id, { sort_order: Number(e.target.value||0) })} />
+</td>
+<td style={{width:120}}>
+  <select className="input" value={(r as any).is_active ? "true":"false"} onChange={(e)=>update((r as any).id, { is_active: e.target.value==="true" })}>
+    <option value="true">是</option>
+    <option value="false">否</option>
+  </select>
+</td>
+<td className="small">{new Date((r as any).created_at).toLocaleString()}</td>
+
+                <td>
+                  <button className="btn secondary" onClick={()=>remove((r as any).id)}>删除</button>
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 ? <tr><td colSpan={99} className="small">暂无数据</td></tr> : null}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
