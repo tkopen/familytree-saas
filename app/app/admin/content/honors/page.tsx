@@ -23,7 +23,7 @@ export default function Page() {
     setRows(data || []) as any);
   }
 
-  useEffect(() => { load();}}, []);
+  useEffect() => { load();}}, []);
 
   async function add() {
     setMsg(null);
